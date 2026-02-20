@@ -1,0 +1,77 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id             String   @id @default(uuid())
+  email          String   @unique
+  username       String   @unique
+  imageUrl       String
+  externalUserId String   @unique
+  bio            String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  following      Follow[] @relation("Following")
+  followedBy     Follow[] @relation("FollowedBy")
+  blocking       Block[]  @relation("Blocking")
+  blockedBy      Block[]  @relation("BlockedBy")
+
+  stream         Stream?
+}
+
+model Follow {
+  id          String   @id @default(uuid())
+
+  followerId  String
+  followingId String
+
+  follower    User @relation("Following", fields: [followerId], references: [id])
+  following   User @relation("FollowedBy", fields: [followingId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model Block {
+  id        String @id @default(uuid())
+
+  blockerId String
+  blockedId String
+
+  blocker User @relation("Blocking", fields: [blockerId], references: [id])
+  blocked User @relation("BlockedBy", fields: [blockedId], references: [id])
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+  @@index([blockedId])
+}
+
+model Stream {
+  id                  String   @id @default(uuid())
+
+  title               String
+  thumbnail           String?
+  ingressId           String?  @unique
+  serverUrl           String?
+  streamKey           String?
+  isLive              Boolean  @default(false)
+  isChatEnabled       Boolean  @default(true)
+  isChatDelayed       Boolean  @default(false)
+  isChatFollowersOnly Boolean  @default(false)
+
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id])
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
